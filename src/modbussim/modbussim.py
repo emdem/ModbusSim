@@ -2,7 +2,6 @@
 import logging
 import serial
 
-import struct
 from modbus_tk import defines as cst
 from modbus_tk import modbus
 from modbus_tk.hooks import call_hooks
@@ -11,7 +10,6 @@ from modbus_tk.modbus_tcp import TcpServer
 from modbus_tk.simulator import Simulator
 from modbus_tk.utils import calculate_rtu_inter_char
 
-from modbus.modbusmap import ModbusMap
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())

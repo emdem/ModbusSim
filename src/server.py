@@ -28,7 +28,7 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.DEBUG)
 
-thread= None
+thread = None
 sim = None
 
 @app.route('/')
