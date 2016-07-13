@@ -43,7 +43,7 @@ PLC  Programmable Logic Controller
 
 There are many ways to use ModBus. Most inverters/batteries are ModBus RTU on RS485.
 
-![modbus architecture](doc/images/modbus_architecture.png)
+![modbus architecture](images/modbus_architecture.png)
 
 ## Basics
 
@@ -54,7 +54,7 @@ Error free transactions between client and server:
 
 
 
-![error free transaction](doc/images/modbus_error_free_transaction.png)
+![error free transaction](images/modbus_error_free_transaction.png)
 
 
 
@@ -63,7 +63,7 @@ More on Modbus exceptions later... However, if an exception occured at some poin
 
 
 
-![exceptional transaction](doc/images/modbus_error_transaction.png)
+![exceptional transaction](images/modbus_error_transaction.png)
 
 
 ## Transactions in ModBus
