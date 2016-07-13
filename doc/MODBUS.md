@@ -99,10 +99,10 @@ This is what it should look like:
 ![cat5 to rs485](images/cat5_to_rs485.jpg)
 
 Since we are doing Modbus RTU, we only need 4 of the ports. I connected mine as follows on the USB RS485 connector:
-![modbus rtu into usb rs485 connector](doc/images/modbus_rtu_usb.jpg)
+![modbus rtu into usb rs485 connector](images/modbus_rtu_usb.jpg)
 
 I connected the com port based RS485 connector to the only serial port on my dev box:
-![modbus rtu into com port rs485 connector](doc/images/modbus_rtu_serial.jpg)
+![modbus rtu into com port rs485 connector](images/modbus_rtu_serial.jpg)
 
 ### Setting up the test server
 
