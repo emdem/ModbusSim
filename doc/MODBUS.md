@@ -70,7 +70,7 @@ More on Modbus exceptions later... However, if an exception occured at some poin
 
 Modbus defines a PDU independent of the underlying communication layer. On specific networks/buses, there may be additional fields in the ADU we have to deal with.
 
-![ADU vs PDU](doc/images/modbus_ADU_PDU.png)
+![ADU vs PDU](images/modbus_ADU_PDU.png)
 
 The ADU is built by the client that initiates a transaction. The Function Code determines what action to take. We will mostly deal with 0x01 and 0x04 primarily (read coil and read input register respectively) for reading and 0x05, 0x06 and 0x10 (write coil, write register and write registers respectively).
 
@@ -96,7 +96,7 @@ If you don't have a RS485 cable for development, that's ok, we can convert a nor
 To make the cable, cut the ends off the CAT5 cable if it has them. Strip all the smaller wires inside. There should be 8 total. Take care not to remove any of the copper fibers with the stripper. After all of them are stripped, twist together the solid with the corresponding stripe.
 
 This is what it should look like:
-![cat5 to rs485](doc/images/cat5_to_rs485.jpg)
+![cat5 to rs485](images/cat5_to_rs485.jpg)
 
 Since we are doing Modbus RTU, we only need 4 of the ports. I connected mine as follows on the USB RS485 connector:
 ![modbus rtu into usb rs485 connector](doc/images/modbus_rtu_usb.jpg)
