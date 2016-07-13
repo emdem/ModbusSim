@@ -1,0 +1,3 @@
+flask
+modbus_tk
+pyserial
