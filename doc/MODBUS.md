@@ -41,7 +41,7 @@ PLC  Programmable Logic Controller
 
 ## Flavors of ModBus
 
-There are many ways to use ModBus. Most inverters/batteries are ModBus RTU on RS485.
+There are many ways to use ModBus. Most inverters/batteries are ModBus RTU on RS485. The diagrams below are all taken from the official modbus documentation.
 
 ![modbus architecture](images/modbus_architecture.png)
 
