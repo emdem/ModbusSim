@@ -172,7 +172,7 @@ def load_config(args):
 
     if not 'slaves' in config.sections():
         config.add_section('slaves')
-        config.set('slaves', 'slaves_count', str(args.slaves_count))
+        config.set('slaves', 'slave_count', str(args.slave_count))
         config.set('slaves', 'slave_start_id', str(args.slave_start_id))
 
     if not 'slave-config' in config.sections():
