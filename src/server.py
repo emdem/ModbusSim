@@ -146,7 +146,7 @@ def parse_args():
     parser.add_argument('-t', '--hostname', type=str, default='127.0.0.1', help='IP hostname or address')
     parser.add_argument('-c', '--config', type=str, default='../config/test.conf', help='modbus simulator configuration file')
     parser.add_argument('-s', '--serial', type=str, default='/dev/ttyS0', help='serial port on which to sim')
-    parser.add_argument('-n', '--slaves_count', type=int, default=0, help='Number of slave devices to create')
+    parser.add_argument('-n', '--slave_count', type=int, default=0, help='Number of slave devices to create')
     parser.add_argument('-d', '--slave_start_id', type=int, default=1, help='Starting id of slaves')
 
     args = parser.parse_args()
