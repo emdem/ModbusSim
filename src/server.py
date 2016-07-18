@@ -178,7 +178,7 @@ def load_config(args):
     if not 'slave-config' in config.sections():
         config.add_section('slave-config')
         config.set('slave-config', 'input_register_count', '0')
-        config.set('slave-config', 'hodling_register_count', '200')
+        config.set('slave-config', 'holding_register_count', '200')
 
     for section_name in config.sections():
         print('section: ', section_name)
