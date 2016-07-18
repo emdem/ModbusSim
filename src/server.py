@@ -144,7 +144,7 @@ def parse_args():
     parser.add_argument('-p', '--rtu_parity', type=str, choices=('even','odd','none'), default='none', help='modbus over serial parity')
     parser.add_argument('-b', '--rtu_baud', type=int, default=9600, help='baud rate for modbus')
     parser.add_argument('-t', '--hostname', type=str, default='127.0.0.1', help='IP hostname or address')
-    parser.add_argument('-c', '--config', type=str, default='test.conf', help='modbus simulator configuration file')
+    parser.add_argument('-c', '--config', type=str, default='../config/test.conf', help='modbus simulator configuration file')
     parser.add_argument('-s', '--serial', type=str, default='/dev/ttyS0', help='serial port on which to sim')
     parser.add_argument('-n', '--slaves_count', type=int, default=0, help='Number of slave devices to create')
     parser.add_argument('-d', '--slave_start_id', type=int, default=1, help='Starting id of slaves')
@@ -169,10 +169,16 @@ def load_config(args):
         config.hostname = args.hostname
     if args.serial:
         config.serial = args.serial
-    if args.slaves_count:
-        config.slaves_count = args.slaves_count
-    if args.slave_start_id:
-        config.slave_start_id = args.slave_start_id
+
+    if not 'slaves' in config.sections():
+        config.add_section('slaves')
+        config.set('slaves', 'slaves_count', args.slaves_count)
+        config.set('slaves', 'slave_start_id', args.slave_start_id)
+
+    if not 'slave-config' in config.sections():
+        config.add_section('slave-config')
+        config.set('slave-config', 'input_register_count', 0)
+        config.set('slave-config', 'hodling_register_count', 200)
 
     for section_name in config.sections():
         print('section: ', section_name)
@@ -180,7 +186,6 @@ def load_config(args):
             print(' {} = {}'.format(name, value))
     return config
 
-#TEST_FILENAME = '/home/emre/projects/power/modbus/maps/batteries/SamsungSDIMegaCoreV04.2.2016.01.26.csv'
 
 def main():
     global config
