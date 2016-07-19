@@ -38,16 +38,18 @@ def init_sim():
     global thread
     global config
     global sim
+
+    # in debug mode, this will get called twice. run only after reload
     if config.getboolean('server', 'debug') and not os.environ.get('WERKZEUG_RUN_MAIN'):
-        print("Running in debug mode, will initialize after reload")
+        LOGGER.info("Running in debug mode, will initialize after reload")
         return
+
     if sim is None:
         LOGGER.info("Sim was not setup so configuring sim")
         slave_count = config.getint('slaves','slave_count')
         slave_start_id = config.getint('slaves', 'slave_start_id')
         input_register_count = config.getint('slave-config', 'input_register_count')
         holding_register_count = config.getint('slave-config', 'holding_register_count')
-
 
         if config.mode == 'rtu':
             sim = ModbusSim(mode=config.mode, port=config.serial, baud=config.rtu_baud)
