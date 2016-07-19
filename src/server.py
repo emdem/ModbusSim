@@ -31,11 +31,12 @@ LOGGER.setLevel(logging.DEBUG)
 thread = None
 sim = None
 
-@app.route('/')
-def index():
+
+@app.before_first_request
+def init_sim():
     global thread
-    global sim
     global config
+    global sim
     if sim is None:
         LOGGER.info("Sim was not setup so configuring sim")
         slave_count = config.getint('slaves','slave_count')
@@ -51,10 +52,15 @@ def index():
 
         for slave_id_offset in range(0, slave_count):
             sim.add_slave(slave_start_id + slave_id_offset, input_register_count, holding_register_count)
-
     if thread is None:
         thread = Thread(target=sim.start)
         thread.start()
+
+
+
+
+@app.route('/')
+def index():
     return "200 OK"
 
 @app.route('/slaves')
