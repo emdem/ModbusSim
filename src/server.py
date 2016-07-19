@@ -32,7 +32,6 @@ thread = None
 sim = None
 
 
-@app.before_first_request
 def init_sim():
     global thread
     global config
@@ -191,8 +190,9 @@ def main():
     global config
     args = parse_args()
     config = load_config(args)
+    init_sim()
 
 
 if __name__ == '__main__':
     main()
-    app.run('0.0.0.0',5002)
+    app.run(host=config.get('server','host'),port=config.getint('server','port'),debug=config.getboolean('server','debug'))
