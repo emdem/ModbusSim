@@ -184,10 +184,6 @@ def load_config(args):
         config.set('slave-config', 'input_register_count', '0')
         config.set('slave-config', 'holding_register_count', '200')
 
-    for section_name in config.sections():
-        print('section: ', section_name)
-        for name, value in config.items(section_name):
-            print(' {} = {}'.format(name, value))
     return config
 
 
