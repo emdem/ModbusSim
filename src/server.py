@@ -183,6 +183,12 @@ def load_config(args):
         config.set('slave-config', 'input_register_count', '0')
         config.set('slave-config', 'holding_register_count', '200')
 
+    if not 'server' in config.sections():
+        config.add_section('server')
+        config.set('server', 'host', '0.0.0.0')
+        config.set('server', 'port', '5002')
+        config.set('server', 'debug', 'False')
+
     return config
 
 
