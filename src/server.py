@@ -57,8 +57,6 @@ def init_sim():
         thread.start()
 
 
-
-
 @app.route('/')
 def index():
     return "200 OK"

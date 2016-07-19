@@ -100,6 +100,18 @@ class ModbusSim(Simulator):
         self.server.set_verbose(True)
 
 
+    def start(self):
+        self.server.start()
+        self.rpc.start()
+        LOGGER.info('modbus_tk.simulator is running...')
+        self._handle()
+
+
+    def close(self):
+        self.rpc.close()
+        self.server.stop()
+    
+
     def add_slave(self, slave_id, input_register_count, holding_register_count):
         if slave_id in self.slaves:
             raise ModbusSimError('Slave with slaveID: %s already exists...' % ( slave_id, ))
