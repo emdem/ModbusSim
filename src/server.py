@@ -6,9 +6,11 @@
 ##############################################
 import argparse
 import logging
+import os
 import serial
 import struct
 import sys
+import threading
 
 from threading import Thread
 
@@ -36,6 +38,9 @@ def init_sim():
     global thread
     global config
     global sim
+    if config.getboolean('server', 'debug') and not os.environ.get('WERKZEUG_RUN_MAIN'):
+        print("Running in debug mode, will initialize after reload")
+        return
     if sim is None:
         LOGGER.info("Sim was not setup so configuring sim")
         slave_count = config.getint('slaves','slave_count')
@@ -43,11 +48,11 @@ def init_sim():
         input_register_count = config.getint('slave-config', 'input_register_count')
         holding_register_count = config.getint('slave-config', 'holding_register_count')
 
+
         if config.mode == 'rtu':
             sim = ModbusSim(mode=config.mode, port=config.serial, baud=config.rtu_baud)
         else:
             sim = ModbusSim(mode=config.mode, port=config.port, hostname=config.hostname)
-
 
         for slave_id_offset in range(0, slave_count):
             sim.add_slave(slave_start_id + slave_id_offset, input_register_count, holding_register_count)
@@ -187,7 +192,7 @@ def load_config(args):
         config.add_section('server')
         config.set('server', 'host', '0.0.0.0')
         config.set('server', 'port', '5002')
-        config.set('server', 'debug', 'False')
+        config.set('server', 'debug', 'True')
 
     return config
 
