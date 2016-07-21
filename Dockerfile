@@ -1,10 +1,9 @@
-FROM alpine:latest
+FROM hypriot/rpi-alpine-scratch:latest
+RUN apk update && apk upgrade
 
-RUN apk add --no-cache python3 && \
+RUN apk add python3 && \
   python3 -m ensurepip && \
-  rm -r /usr/lib/python*/ensurepip && \
-  pip3 install --upgrade pip setuptools && \
-  rm -r /root/.cache
+  pip3 install --upgrade pip setuptools
 
 RUN mkdir -p /opt
 ADD requirements.txt /opt/.
