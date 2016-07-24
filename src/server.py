@@ -2,20 +2,15 @@
 # -*- coding: utf_8 -*-
 
 ##############################################
-## This class is the interface implementation
+# This class is the interface implementation
 ##############################################
 import argparse
 import logging
 import os
-import serial
-import struct
-import sys
-import threading
 
 from threading import Thread
 
 from configparser import ConfigParser
-from modbus_tk import modbus
 
 from modbussim.modbussim import ModbusSim
 from flask import json
@@ -108,7 +103,6 @@ def load_slave_dump(slave_id):
 def slave_dump(slave_id):
     global sim
     slave = sim.server.get_slave(slave_id)
-    values = slave.get_values('holding_registers', 40000, 200)
     return sim.dump_slave(slave_id)
 
 @app.route('/slave/<int:slave_id>/<int:address>')
@@ -117,7 +111,7 @@ def slave_read(slave_id, address):
     if slave_id not in sim.slaves:
         return "Slave does not exist"
     slave = sim.server.get_slave(slave_id)
-    if address < 40000 or address > 40200:
+    if address < 30001 or address == 40000 or address >= 40001 + config.getint('slave-config', 'holding_register_count'):
         return "Address is out of range"
     value = slave.get_values('holding_registers', address, 1)
     return str(value)
@@ -128,7 +122,7 @@ def slave_write(slave_id, address):
     if slave_id not in sim.slaves:
         return "Slave does not exist"
     slave = sim.server.get_slave(slave_id)
-    if address < 40000 or address > 40200:
+    if address < 40001 or address >= 40001 + config.getint('slave-config', 'holding_register_count'):
         return "Address is out of range"
 
     if request.headers['Content-Type'] == 'text/plain':
@@ -187,8 +181,8 @@ def load_config(args):
 
     if not 'slave-config' in config.sections():
         config.add_section('slave-config')
-        config.set('slave-config', 'input_register_count', '0')
-        config.set('slave-config', 'holding_register_count', '200')
+        config.set('slave-config', 'input_register_count', '9999')
+        config.set('slave-config', 'holding_register_count', '9999')
 
     if not 'server' in config.sections():
         config.add_section('server')
