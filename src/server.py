@@ -13,7 +13,7 @@ from threading import Thread
 from configparser import ConfigParser
 
 from modbussim.modbussim import ModbusSim
-from flask import json
+from flask import json, jsonify
 from flask import Flask, request
 app = Flask(__name__)
 app.config['DEBUG'] = True
@@ -62,16 +62,18 @@ def init_sim():
 def index():
     return "200 OK"
 
+
 @app.route('/slaves')
 def slaves():
     global sim
-    return str(sim.slaves)
+    return jsonify(sim.slaves)
 
 
 @app.route('/dump')
 def dump():
     global sim
     return sim.dump_simulator()
+
 
 @app.route('/dump', methods=['POST'])
 def load_dump():
@@ -112,9 +114,9 @@ def slave_read(slave_id, address):
     if slave_id not in sim.slaves:
         return "Slave does not exist", 400
     slave = sim.server.get_slave(slave_id)
-    if address > 30000 or address < 30001 + config.getint('slave-config', 'input_register_count'):
+    if 30000 <= address < 30001 + config.getint('slave-config', 'input_register_count'):
         block = 'input_registers'
-    elif address == 40000 or address >= 40001 + config.getint('slave-config', 'holding_register_count'):
+    elif 40000 <= address < 40001 + config.getint('slave-config', 'holding_register_count'):
         block = 'holding_registers'
     else:
         return "Address is out of range", 400
@@ -130,9 +132,9 @@ def slave_write(slave_id, address):
         return "Slave does not exist", 400
     slave = sim.server.get_slave(slave_id)
 
-    if address > 30000 or address < 30001 + config.getint('slave-config', 'input_register_count'):
+    if 30000 <= address < 30001 + config.getint('slave-config', 'input_register_count'):
         block = 'input_registers'
-    elif address == 40000 or address < 40001 + config.getint('slave-config', 'holding_register_count'):
+    elif 40000 <= address < 40001 + config.getint('slave-config', 'holding_register_count'):
         block = 'holding_registers'
     else:
         return "Address is out of range", 400
@@ -171,6 +173,7 @@ def parse_args():
 
     args = parser.parse_args()
     return args
+
 
 def load_config(args):
     config = ConfigParser(allow_no_value=True)
