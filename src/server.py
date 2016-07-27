@@ -79,7 +79,7 @@ def load_dump():
     if request.headers['Content-Type'] == 'application/json':
         sim.load_simulator_dump(request.json)
         return "Finished loading dump"
-    return "Expected JSON message"
+    return "Unsupported Media Type", 415
 
 
 @app.route('/slave/<int:slave_id>')
@@ -88,7 +88,7 @@ def slave(slave_id):
     if slave_id in sim.slaves:
         return str(sim.slaves[slave_id])
     else:
-        return "Slave ID: " + str(slave_id) + " does not exist."
+        return "Slave ID: " + str(slave_id) + " does not exist.", 400
 
 @app.route('/slave/dump/<int:slave_id>', methods=['POST'])
 def load_slave_dump(slave_id):
@@ -96,7 +96,7 @@ def load_slave_dump(slave_id):
     if request.headers['Content-Type'] == 'application/json':
         sim.load_slave_dump(request.json)
         return "Finished loading dump"
-    return "Expected JSON message"
+    return "Unsupported Media Type", 415
 
 
 @app.route('/slave/dump/<int:slave_id>')
@@ -105,39 +105,55 @@ def slave_dump(slave_id):
     slave = sim.server.get_slave(slave_id)
     return sim.dump_slave(slave_id)
 
+
 @app.route('/slave/<int:slave_id>/<int:address>')
 def slave_read(slave_id, address):
     global sim
     if slave_id not in sim.slaves:
-        return "Slave does not exist"
+        return "Slave does not exist", 400
     slave = sim.server.get_slave(slave_id)
-    if address < 30001 or address == 40000 or address >= 40001 + config.getint('slave-config', 'holding_register_count'):
-        return "Address is out of range"
-    value = slave.get_values('holding_registers', address, 1)
+    if address > 30000 or address < 30001 + config.getint('slave-config', 'input_register_count'):
+        block = 'input_registers'
+    elif address == 40000 or address >= 40001 + config.getint('slave-config', 'holding_register_count'):
+        block = 'holding_registers'
+    else:
+        return "Address is out of range", 400
+    value = slave.get_values(block, address, 1)
+
     return str(value)
+
 
 @app.route('/slave/<int:slave_id>/<int:address>', methods=['POST'])
 def slave_write(slave_id, address):
     global sim
     if slave_id not in sim.slaves:
-        return "Slave does not exist"
+        return "Slave does not exist", 400
     slave = sim.server.get_slave(slave_id)
-    if address < 40001 or address >= 40001 + config.getint('slave-config', 'holding_register_count'):
-        return "Address is out of range"
+
+    if address > 30000 or address < 30001 + config.getint('slave-config', 'input_register_count'):
+        block = 'input_registers'
+    elif address == 40000 or address >= 40001 + config.getint('slave-config', 'holding_register_count'):
+        block = 'holding_registers'
+    else:
+        return "Address is out of range", 400
 
     if request.headers['Content-Type'] == 'text/plain':
         value = None
         try:
             value = int(request.data)
         except Exception as asdf:
-            return "Could not convert to integer"
-        slave.set_values('holding_registers', address, value)
+            return "Could not convert to integer", 400
+        slave.set_values(block, address, value)
         return "Success"
     elif request.header['Content-Type'] == 'application/json':
         return "JSON message: " + str(json.dumps(request.json))
     else:
-        return "415 Unsupported Media Type"
+        return "Unsupported Media Type", 415
 
+@app.errorhandler(Exception)
+def unhandled_exception(e):
+    app.logger.error('Unhandled Exception: %s', e)
+    return str(e), 500
 
 
 def parse_args():

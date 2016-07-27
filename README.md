@@ -50,3 +50,13 @@ To dump/load individual slave devices:
 ```
 curl -X POST -H "Content-Type:application/json" http://127.0.0.1:5002/dump/slave/10 -d@test/slave_dump.json
 ```
+
+To write to invidivual register:
+```
+curl -X POST -H "Content-Type:text/plain" -d "<INT_VALUE>" http://127.0.0.1:5002/slave/10/40001
+```
+
+To read from individual register:
+```
+curl http://127.0.0.1:5002/slave/10/40001
+```

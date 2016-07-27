@@ -90,3 +90,6 @@ ENV/
 
 # Vim/Vi swapfile
 .swp
+
+# IDEA project files
+.idea
