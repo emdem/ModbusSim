@@ -132,7 +132,7 @@ def slave_write(slave_id, address):
 
     if address > 30000 or address < 30001 + config.getint('slave-config', 'input_register_count'):
         block = 'input_registers'
-    elif address == 40000 or address >= 40001 + config.getint('slave-config', 'holding_register_count'):
+    elif address == 40000 or address < 40001 + config.getint('slave-config', 'holding_register_count'):
         block = 'holding_registers'
     else:
         return "Address is out of range", 400
