@@ -152,7 +152,7 @@ def slave_write(slave_id, address):
 
 @app.errorhandler(Exception)
 def unhandled_exception(e):
-    app.logger.error('Unhandled Exception: %s', e)
+    LOGGER.error('Unhandled Exception: %s', e)
     return str(e), 500
 
 
