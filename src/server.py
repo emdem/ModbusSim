@@ -2,23 +2,18 @@
 # -*- coding: utf_8 -*-
 
 ##############################################
-## This class is the interface implementation
+# This class is the interface implementation
 ##############################################
 import argparse
 import logging
 import os
-import serial
-import struct
-import sys
-import threading
 
 from threading import Thread
 
 from configparser import ConfigParser
-from modbus_tk import modbus
 
 from modbussim.modbussim import ModbusSim
-from flask import json
+from flask import json, jsonify
 from flask import Flask, request
 app = Flask(__name__)
 app.config['DEBUG'] = True
@@ -67,10 +62,11 @@ def init_sim():
 def index():
     return "200 OK"
 
+
 @app.route('/slaves')
 def slaves():
     global sim
-    return str(sim.slaves)
+    return jsonify(sim.slaves)
 
 
 @app.route('/dump')
@@ -78,13 +74,14 @@ def dump():
     global sim
     return sim.dump_simulator()
 
+
 @app.route('/dump', methods=['POST'])
 def load_dump():
     global sim
     if request.headers['Content-Type'] == 'application/json':
         sim.load_simulator_dump(request.json)
         return "Finished loading dump"
-    return "Expected JSON message"
+    return "Unsupported Media Type", 415
 
 
 @app.route('/slave/<int:slave_id>')
@@ -93,7 +90,7 @@ def slave(slave_id):
     if slave_id in sim.slaves:
         return str(sim.slaves[slave_id])
     else:
-        return "Slave ID: " + str(slave_id) + " does not exist."
+        return "Slave ID: " + str(slave_id) + " does not exist.", 400
 
 @app.route('/slave/dump/<int:slave_id>', methods=['POST'])
 def load_slave_dump(slave_id):
@@ -101,49 +98,64 @@ def load_slave_dump(slave_id):
     if request.headers['Content-Type'] == 'application/json':
         sim.load_slave_dump(request.json)
         return "Finished loading dump"
-    return "Expected JSON message"
+    return "Unsupported Media Type", 415
 
 
 @app.route('/slave/dump/<int:slave_id>')
 def slave_dump(slave_id):
     global sim
     slave = sim.server.get_slave(slave_id)
-    values = slave.get_values('holding_registers', 40000, 200)
     return sim.dump_slave(slave_id)
+
 
 @app.route('/slave/<int:slave_id>/<int:address>')
 def slave_read(slave_id, address):
     global sim
     if slave_id not in sim.slaves:
-        return "Slave does not exist"
+        return "Slave does not exist", 400
     slave = sim.server.get_slave(slave_id)
-    if address < 40000 or address > 40200:
-        return "Address is out of range"
-    value = slave.get_values('holding_registers', address, 1)
+    if 30000 <= address < 30001 + config.getint('slave-config', 'input_register_count'):
+        block = 'input_registers'
+    elif 40000 <= address < 40001 + config.getint('slave-config', 'holding_register_count'):
+        block = 'holding_registers'
+    else:
+        return "Address is out of range", 400
+    value = slave.get_values(block, address, 1)
+
     return str(value)
+
 
 @app.route('/slave/<int:slave_id>/<int:address>', methods=['POST'])
 def slave_write(slave_id, address):
     global sim
     if slave_id not in sim.slaves:
-        return "Slave does not exist"
+        return "Slave does not exist", 400
     slave = sim.server.get_slave(slave_id)
-    if address < 40000 or address > 40200:
-        return "Address is out of range"
+
+    if 30000 <= address < 30001 + config.getint('slave-config', 'input_register_count'):
+        block = 'input_registers'
+    elif 40000 <= address < 40001 + config.getint('slave-config', 'holding_register_count'):
+        block = 'holding_registers'
+    else:
+        return "Address is out of range", 400
 
     if request.headers['Content-Type'] == 'text/plain':
         value = None
         try:
             value = int(request.data)
         except Exception as asdf:
-            return "Could not convert to integer"
-        slave.set_values('holding_registers', address, value)
+            return "Could not convert to integer", 400
+        slave.set_values(block, address, value)
         return "Success"
     elif request.header['Content-Type'] == 'application/json':
         return "JSON message: " + str(json.dumps(request.json))
     else:
-        return "415 Unsupported Media Type"
+        return "Unsupported Media Type", 415
 
+@app.errorhandler(Exception)
+def unhandled_exception(e):
+    LOGGER.error('Unhandled Exception: %s', e)
+    return str(e), 500
 
 
 def parse_args():
@@ -161,6 +173,7 @@ def parse_args():
 
     args = parser.parse_args()
     return args
+
 
 def load_config(args):
     config = ConfigParser(allow_no_value=True)
@@ -187,8 +200,8 @@ def load_config(args):
 
     if not 'slave-config' in config.sections():
         config.add_section('slave-config')
-        config.set('slave-config', 'input_register_count', '0')
-        config.set('slave-config', 'holding_register_count', '200')
+        config.set('slave-config', 'input_register_count', '9999')
+        config.set('slave-config', 'holding_register_count', '9999')
 
     if not 'server' in config.sections():
         config.add_section('server')

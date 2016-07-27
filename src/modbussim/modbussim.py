@@ -5,7 +5,7 @@ import serial
 from modbus_tk import defines as cst
 from modbus_tk import modbus
 from modbus_tk.hooks import call_hooks
-from modbus_tk.modbus_rtu import RtuServer 
+from modbus_tk.modbus_rtu import RtuServer
 from modbus_tk.modbus_tcp import TcpServer
 from modbus_tk.simulator import Simulator
 from modbus_tk.utils import calculate_rtu_inter_char
@@ -55,7 +55,7 @@ class ModbusRtuServer(RtuServer):
         self._serial.timeout = 10*self._t0
         LOGGER.info('interchar timeout = %f' % (self._serial.interCharTimeout,))
         LOGGER.info('timeout = %f' % (self._serial.timeout,))
-    
+
     def _handle(self, request):
         LOGGER.debug(self.get_log_buffer('-->', request))
 
@@ -87,7 +87,7 @@ class ModbusSim(Simulator):
             self.rtu = serial.Serial(port=port, baudrate=baud)
             Simulator.__init__(self, ModbusRtuServer(self.rtu))
             # timeout is too fast for 19200 so increase a little bit
-            self.server._serial.timeout *= 2 
+            self.server._serial.timeout *= 2
             self.server._serial.interCharTimeout *= 2
             LOGGER.info('Initializing modbus %s simulator: baud = %d port = %s parity = %s' % (self.mode, baud, port, self.rtu.parity))
             LOGGER.info('stop bits = %d xonxoff = %d' % (self.rtu.stopbits, self.rtu.xonxoff))
@@ -110,7 +110,7 @@ class ModbusSim(Simulator):
     def close(self):
         self.rpc.close()
         self.server.stop()
-    
+
 
     def add_slave(self, slave_id, input_register_count, holding_register_count):
         if slave_id in self.slaves:
@@ -122,9 +122,9 @@ class ModbusSim(Simulator):
         slave = self.server.add_slave(slave_id)
         self.slaves.update({slave_id:{'input_register_count':input_register_count,'holding_register_count':holding_register_count}})
         if input_register_count > 0:
-            slave.add_block('input_registers', 4, 30000, input_register_count)
+            slave.add_block('input_registers', 4, 30001, input_register_count)
         if holding_register_count > 0:
-            slave.add_block('holding_registers', 3, 40000, holding_register_count)
+            slave.add_block('holding_registers', 3, 40001, holding_register_count)
 
 
     def dump_simulator(self):
@@ -138,7 +138,7 @@ class ModbusSim(Simulator):
         toReturn +="]"
         return toReturn
 
-   
+
     def load_simulator_dump(self, dump):
         for slave in self.slaves:
             self.server.remove_slave(slave)
@@ -156,9 +156,9 @@ class ModbusSim(Simulator):
         input_registers = []
         holding_registers = []
         if input_register_count > 0:
-            input_registers = slave.get_values('input_registers', 30000, input_register_count)
+            input_registers = slave.get_values('input_registers', 30001, input_register_count)
         if holding_register_count > 0:
-            holding_registers = slave.get_values('holding_registers', 40000, holding_register_count)
+            holding_registers = slave.get_values('holding_registers', 40001, holding_register_count)
         toReturn = '{"slave_id":'+str(slave_id)+',"input_register_count":'+str(input_register_count)
         toReturn += ',"input_registers":'+str(list(input_registers))
         toReturn += ',"holding_register_count":'+str(holding_register_count)
@@ -166,7 +166,7 @@ class ModbusSim(Simulator):
         toReturn += '}'
         return toReturn
 
-    
+
     def load_slave_dump(self, dump):
         slave_id = dump['slave_id']
         input_register_count = dump['input_register_count']
@@ -184,10 +184,10 @@ class ModbusSim(Simulator):
             slave = self.server.add_slave(slave_id)
 
         if input_register_count > 0:
-            slave.add_block('input_registers', 4, 30000, input_register_count)
-            slave.set_values('input_registers', 30000, input_registers)
+            slave.add_block('input_registers', 4, 30001, input_register_count)
+            slave.set_values('input_registers', 30001, input_registers)
         if holding_register_count > 0:
-            slave.add_block('holding_registers', 3, 40000, holding_register_count)
-            slave.set_values('holding_registers', 40000, holding_registers)
+            slave.add_block('holding_registers', 3, 40001, holding_register_count)
+            slave.set_values('holding_registers', 40001, holding_registers)
 
         self.slaves.update({slave_id:{'input_register_count':input_register_count,'holding_register_count':holding_register_count}})
