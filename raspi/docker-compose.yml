@@ -1,0 +1,20 @@
+version: '2'
+services:
+  logspout:
+    image: armhfbuild/logstash
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock
+    environment:
+      DEBUG: "true"
+    ports:
+      - "0.0.0.0:8000:80"
+  modbussim:
+    image: modbussim
+    build: .
+    ports:
+      - "0.0.0.0:80:5002"
+    devices:
+      - "/dev/ttyUSB0:/dev/tnt1"
+    command: ["python3", "-u", "/opt/src/server.py", "-m", "rtu", "-b", "19200", "-s", "/dev/tnt1", "-n", "2", "-d", "1"]
+    depends_on:
+      - logspout

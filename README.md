@@ -7,6 +7,12 @@ Got a lot of inspiration, especially from [Luc Jean](https://github.com/ljean) a
 
 Pretty basic but more updates/improvements coming soon - especially documentation!
 
+If you have docker-compose installed, this is the fast way to get going:
+```
+docker-compose up
+```
+
+
 Assumptions made below:
 1. The simulator server will use /dev/ttyS0 - can be adjusted in config/test.conf.
 2. The example client will use /dev/ttyUSB0 - can also be adjust but is currently hardcoded in the slightly modified version of the example client written by Luc Jean and included with modbus-tk.
