@@ -16,5 +16,3 @@ services:
     devices:
       - "/dev/ttyUSB0:/dev/tnt1"
     command: ["python3", "-u", "/opt/src/server.py", "-m", "rtu", "-b", "19200", "-s", "/dev/tnt1", "-n", "2", "-d", "1"]
-    depends_on:
-      - logspout

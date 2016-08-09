@@ -212,6 +212,15 @@ def load_config(args):
     return config
 
 
+def signal_handler(signm, frame):
+    global sim
+    log.info('Got Signal %s, exiting now.' % (str(signm)))
+    sim.close() 
+    log.info('Stopped modbus simulator.')
+    sys.exit(0)
+
+
+
 def main():
     global config
     args = parse_args()
@@ -220,5 +229,10 @@ def main():
 
 
 if __name__ == '__main__':
+    signal.signal(signal.SIGABRT, signal_handler)
+    signal.signal(signal.SIGHUP, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGQUIT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
     main()
     app.run(host=config.get('server','host'),port=config.getint('server','port'),debug=config.getboolean('server','debug'))
