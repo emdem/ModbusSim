@@ -7,6 +7,7 @@
 import argparse
 import logging
 import os
+import signal
 
 from threading import Thread
 
