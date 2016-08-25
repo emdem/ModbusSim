@@ -38,6 +38,12 @@ If you get a 200 OK, in the other terminal window you should see the following i
 127.0.0.1 - - [13/Jul/2016 11:22:28] "GET / HTTP/1.1" 200 -
 modbus_tk.simulator is running...
 ```
+
+To interact with the API via browser, navigate to:
+```
+http://127.0.0.1:5002/api
+```
+
 It is possible to interact with the simulator via the console here to issue commands to add slaves/changes values/add blocks.
 
 You can dump/load the state of all slaves or individual slaves or even registers all via the REST API. You can confirm this by visiting the following url in your browser:
