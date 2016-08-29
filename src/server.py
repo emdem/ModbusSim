@@ -8,6 +8,7 @@ import argparse
 import logging
 import os
 import signal
+import struct
 
 from threading import Thread
 
@@ -444,6 +445,7 @@ def slave_write(slave_id, address):
           - modbus-sim
         summary: "Returns register value"
         consumes:
+          - "application/json"
           - "text/plain"
         parameters:
           - name: slave_id
@@ -456,14 +458,29 @@ def slave_write(slave_id, address):
             type: integer
             required: true
             description: the register address
-          - name: "RegisterValue"
+          - name: "Register"
             in: body
-            required: true
-            description: The register value
+            required: false
+            description: The register value as a "string" (if so use 'text/plain') or as JSON.
             schema:
-                id: RegisterValue
-                type: int
-                example: 10
+                id: RegisterJSON
+                type: object
+                schema:
+                    id: Register
+                    required:
+                    - value
+                    properties:
+                        value:
+                            type: any
+                            example: 1.0
+                        format:
+                            type: string
+                            description: Data format in struct notation
+                            example: ">f"
+                        size:
+                            type: integer
+                            example: 2
+
         responses:
             200:
                 description: The result of the write operation
@@ -486,12 +503,39 @@ def slave_write(slave_id, address):
             value = int(request.data)
         except Exception as asdf:
             return "Could not convert to integer", 400
-        slave.set_values(block, address, value)
-        return "Success", 200
-    elif request.header['Content-Type'] == 'application/json':
-        return "JSON message: " + str(json.dumps(request.json)), 200
+    elif request.headers['Content-Type'] == 'application/json':
+
+        request_json = request.get_json()
+        if "value" in request_json:
+            value = request_json["value"]
+        else:
+            return "Required 'value' key not found.", 400
+
+        fmt = request_json["format"] if "format" in request_json else None
+        size = request_json["size"] if "size" in request_json else 1
+        value = convert_to_shorts_tuple(value, fmt, size) if fmt else int(value)
     else:
         return "Unsupported Media Type", 415
+
+    slave.set_values(block, address, value)
+    return "Success", 200
+
+
+def convert_to_shorts_tuple(value, fmt, size):
+    '''
+    Returns an array of short size(16 bits) values for a given register format/size
+    '''
+    if type(value) == str:
+        # pad with null character until we fill the register size
+        value = value.ljust(size * 2, '\0')
+        # encode to bytes as struct only accepts bytes for strings
+        value = value.encode()
+    packed_data = struct.pack(fmt, value)
+    shorts_tuple = struct.unpack('>' + str(size) + 'H', packed_data)
+    if len(shorts_tuple) == 1:
+        return shorts_tuple[0]
+    return shorts_tuple
+
 
 @app.errorhandler(Exception)
 def unhandled_exception(e):
@@ -559,7 +603,6 @@ def signal_handler(signm, frame):
     sim.close() 
     log.info('Stopped modbus simulator.')
     sys.exit(0)
-
 
 
 def main():
