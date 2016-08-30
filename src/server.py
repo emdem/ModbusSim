@@ -93,6 +93,18 @@ def slave(slave_id):
     else:
         return "Slave ID: " + str(slave_id) + " does not exist.", 400
 
+
+@app.route('/slave/add/<int:slave_id>')
+def add_slave_by_id(slave_id):
+    global sim
+    if request.headers['Content-Type'] == 'application/json':
+        if 'input_register_count' in request.json and 'holding_register_count' in request.json: 
+            sim.server.add_slave(slave_id, request.json['input_register_count'], request.json['holding_register_count'])
+            return "Success"
+        return "Must include input_register_count and holding_register_count", 415
+    return "Unsupported Media Type", 415
+
+
 @app.route('/slave/dump/<int:slave_id>', methods=['POST'])
 def load_slave_dump(slave_id):
     global sim
