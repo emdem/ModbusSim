@@ -8,15 +8,30 @@ import argparse
 import logging
 import os
 import signal
+import struct
 
 from threading import Thread
 
 from configparser import ConfigParser
 
 from modbussim.modbussim import ModbusSim
-from flask import json, jsonify
-from flask import Flask, request
+from flask import Flask, request, json, jsonify, redirect
+from flasgger import Swagger
 app = Flask(__name__)
+app.config['SWAGGER'] = {
+    "swagger_version": "2.0",
+    "specs": [
+        {
+            "version": "1.0.0",
+            "title": "ModbusSim API",
+            "description": "An API for interacting with ModbusSim",
+            "endpoint": 'spec',
+            "route": '/spec',
+        }
+    ]
+}
+Swagger(app)
+
 app.config['DEBUG'] = True
 app.config['PORT'] = 8082
 app.config['HOST'] = '0.0.0.0'
@@ -28,6 +43,7 @@ LOGGER.setLevel(logging.DEBUG)
 
 thread = None
 sim = None
+
 
 
 def init_sim():
@@ -63,33 +79,206 @@ def init_sim():
 def index():
     return "200 OK"
 
+@app.route('/api')
+def swagger():
+    return redirect("/apidocs/index.html", code=302)
 
 @app.route('/slaves')
 def slaves():
+    """
+        ModbusSim API / Get Slaves
+        ---
+        tags:
+          - modbus-sim
+        summary: "Returns Slaves of known to Modbus Sim"
+        produces:
+          - "application/json"
+        responses:
+          200:
+            description: A list of slaves and their configuration
+            schema:
+                    id: SlavesDictionary
+                    type: object
+                    description: "Slaves Dictionary"
+                    required:
+                    - "1"
+                    properties:
+                        "1":
+                            type: object
+                            description: "Slave Configuration"
+                            schema:
+                                id: SlaveConfiguration
+                                type: object
+                                properties:
+                                    holding_register_count:
+                                        type: integer
+                                        description: "Metric Value"
+                                        example: 9999
+                                    input_register_count:
+                                        type: integer
+                                        description: "Metric Value"
+                                        example: 9999
+                        "2":
+                            type: object
+                            description: "Slave Configuration"
+                            schema:
+                                id: SlaveConfiguration
+                                type: object
+                                properties:
+                                    holding_register_count:
+                                        type: integer
+                                        description: "Metric Value"
+                                        example: 9999
+                                    input_register_count:
+                                        type: integer
+                                        description: "Metric Value"
+                                        example: 9999
+
+    """
     global sim
     return jsonify(sim.slaves)
 
 
 @app.route('/dump')
 def dump():
+    """
+        ModbusSim API / Dump Slave Configurations
+        ---
+        tags:
+          - modbus-sim
+        summary: "Returns JSON Configuration of Slaves known to Modbus Sim"
+        produces:
+          - "application/json"
+        responses:
+          200:
+            description: A dump of all slave configurations
+            schema:
+                    id: SlaveConfigList
+                    type: array
+                    description: "Slave Configuration List"
+                    items:
+                        id: SlaveConfiguration
+                        type: object
+                        required:
+                            - "slave_id"
+                        properties:
+                            slave_id:
+                                type: integer
+                                example: 1
+                            input_register_count:
+                                type: integer
+                                description: "Metric Value"
+                                example: 9999
+                            input_registers:
+                                type: array
+                                description: "Array of Input Register Values"
+                                example: [ 0, 0, 0 ]
+                            holding_register_count:
+                                type: integer
+                                description: "Metric Value"
+                                example: 9999
+                            holding_registers:
+                                type: array
+                                description: "Array of Holding Register Values"
+                                example: [ 0, 0, 0 ]
+    """
     global sim
     return sim.dump_simulator()
 
 
 @app.route('/dump', methods=['POST'])
 def load_dump():
+    """
+        ModbusSim API / Load Slave Configurations
+        ---
+        tags:
+          - modbus-sim
+        summary: "Loads JSON Configuration of Slaves known to Modbus Sim"
+        consumes:
+          - "application/json"
+        parameters:
+          - name: "SlaveConfigList"
+            in: body
+            required: true
+            description: The JSON configuration
+            schema:
+                    id: SlaveConfigList
+                    type: array
+                    description: "Slave Configuration List"
+                    items:
+                        id: SlaveConfiguration
+                        type: object
+                        required:
+                            - "slave_id"
+                        properties:
+                            slave_id:
+                                type: integer
+                                example: 1
+                            input_register_count:
+                                type: integer
+                                description: "Metric Value"
+                                example: 9999
+                            input_registers:
+                                type: array
+                                description: "Array of Input Register Values"
+                                example: [ 1, 2, 3 ]
+                            holding_register_count:
+                                type: integer
+                                description: "Metric Value"
+                                example: 9999
+                            holding_registers:
+                                type: array
+                                description: "Array of Holding Register Values"
+                                example: [ 1, 2, 3 ]
+        responses:
+            200:
+                description: The result of the load operation
+    """
     global sim
     if request.headers['Content-Type'] == 'application/json':
         sim.load_simulator_dump(request.json)
-        return "Finished loading dump"
+        return "Finished loading dump", 200
     return "Unsupported Media Type", 415
 
 
 @app.route('/slave/<int:slave_id>')
 def slave(slave_id):
+    """
+        ModbusSim API / Get Slave Info
+        ---
+        tags:
+          - modbus-sim
+        summary: "Returns JSON info for Slave"
+        produces:
+          - "application/json"
+        parameters:
+          - name: slave_id
+            in: path
+            type: integer
+            required: true
+            description: the slave ID
+        responses:
+          200:
+            description: The slave configuration
+            schema:
+                type: object
+                description: "Slave Configuration"
+                schema:
+                    id: SlaveConfiguration
+                    type: object
+                    properties:
+                        holding_register_count:
+                            type: integer
+                            description: "Metric Value"
+                            example: 9999
+                        input_register_count:
+                            type: integer
+                            description: "Metric Value"
+                            example: 9999
+    """
     global sim
     if slave_id in sim.slaves:
-        return str(sim.slaves[slave_id])
+        return jsonify(sim.slaves[slave_id])
     else:
         return "Slave ID: " + str(slave_id) + " does not exist.", 400
 
@@ -107,15 +296,109 @@ def add_slave_by_id(slave_id):
 
 @app.route('/slave/dump/<int:slave_id>', methods=['POST'])
 def load_slave_dump(slave_id):
+    """
+        ModbusSim API / Load Slave Configurations
+        ---
+        tags:
+          - modbus-sim
+        summary: "Loads JSON Configuration of Slaves known to Modbus Sim"
+        consumes:
+          - "application/json"
+        parameters:
+          - name: slave_id
+            in: path
+            type: integer
+            required: true
+            description: the slave ID
+          - name: "SlaveConfiguration"
+            in: body
+            required: true
+            description: The JSON configuration
+            schema:
+                id: SlaveConfiguration
+                type: object
+                required:
+                    - "slave_id"
+                schema:
+                    properties:
+                        slave_id:
+                            type: integer
+                            example: 1
+                        input_register_count:
+                            type: integer
+                            description: "Metric Value"
+                            example: 9999
+                        input_registers:
+                            type: array
+                            description: "Array of Input Register Values"
+                            example: [ 1, 2, 3 ]
+                        holding_register_count:
+                            type: integer
+                            description: "Metric Value"
+                            example: 9999
+                        holding_registers:
+                            type: array
+                            description: "Array of Holding Register Values"
+                            example: [ 1, 2, 3 ]
+        responses:
+            200:
+                description: The result of the load operation
+    """
     global sim
     if request.headers['Content-Type'] == 'application/json':
         sim.load_slave_dump(request.json)
-        return "Finished loading dump"
+        return "Finished loading dump", 200
     return "Unsupported Media Type", 415
 
 
 @app.route('/slave/dump/<int:slave_id>')
 def slave_dump(slave_id):
+    """
+        ModbusSim API / Dump Slave Configuration
+        ---
+        tags:
+          - modbus-sim
+        summary: "Returns JSON Configuration of Slaves known to Modbus Sim"
+        produces:
+          - "application/json"
+        parameters:
+          - name: slave_id
+            in: path
+            type: integer
+            required: true
+            description: the slave ID
+        responses:
+          200:
+            description: The slave configuration dump
+            schema:
+                id: SlaveConfiguration
+                type: object
+                required:
+                    - "slave_id"
+                required:
+                    - "slave_id"
+                schema:
+                    properties:
+                        slave_id:
+                            type: integer
+                            example: 1
+                        input_register_count:
+                            type: integer
+                            description: "Metric Value"
+                            example: 9999
+                        input_registers:
+                            type: array
+                            description: "Array of Input Register Values"
+                            example: [ 1, 2, 3 ]
+                        holding_register_count:
+                            type: integer
+                            description: "Metric Value"
+                            example: 9999
+                        holding_registers:
+                            type: array
+                            description: "Array of Holding Register Values"
+                            example: [ 1, 2, 3 ]
+    """
     global sim
     slave = sim.server.get_slave(slave_id)
     return sim.dump_slave(slave_id)
@@ -123,6 +406,33 @@ def slave_dump(slave_id):
 
 @app.route('/slave/<int:slave_id>/<int:address>')
 def slave_read(slave_id, address):
+    """
+        ModbusSim API / Read Register
+        ---
+        tags:
+          - modbus-sim
+        summary: "Returns register value"
+        produces:
+          - "text/plain"
+        parameters:
+          - name: slave_id
+            in: path
+            type: integer
+            required: true
+            description: the slave ID
+          - name: address
+            in: path
+            type: integer
+            required: true
+            description: the register address
+        responses:
+          200:
+            description: The register value
+            schema:
+                type: integer
+                description: "Register Value"
+                example: 10
+    """
     global sim
     if slave_id not in sim.slaves:
         return "Slave does not exist", 400
@@ -135,11 +445,58 @@ def slave_read(slave_id, address):
         return "Address is out of range", 400
     value = slave.get_values(block, address, 1)
 
-    return str(value)
+    return str(value[0])
 
 
 @app.route('/slave/<int:slave_id>/<int:address>', methods=['POST'])
 def slave_write(slave_id, address):
+    """
+        ModbusSim API / Write Register
+        ---
+        tags:
+          - modbus-sim
+        summary: "Returns register value"
+        consumes:
+          - "application/json"
+          - "text/plain"
+        parameters:
+          - name: slave_id
+            in: path
+            type: integer
+            required: true
+            description: the slave ID
+          - name: address
+            in: path
+            type: integer
+            required: true
+            description: the register address
+          - name: "Register"
+            in: body
+            required: false
+            description: The register value as a "string" (if so use 'text/plain') or as JSON.
+            schema:
+                id: RegisterJSON
+                type: object
+                schema:
+                    id: Register
+                    required:
+                    - value
+                    properties:
+                        value:
+                            type: any
+                            example: 1.0
+                        format:
+                            type: string
+                            description: Data format in struct notation
+                            example: ">f"
+                        size:
+                            type: integer
+                            example: 2
+
+        responses:
+            200:
+                description: The result of the write operation
+    """
     global sim
     if slave_id not in sim.slaves:
         return "Slave does not exist", 400
@@ -158,12 +515,39 @@ def slave_write(slave_id, address):
             value = int(request.data)
         except Exception as asdf:
             return "Could not convert to integer", 400
-        slave.set_values(block, address, value)
-        return "Success"
-    elif request.header['Content-Type'] == 'application/json':
-        return "JSON message: " + str(json.dumps(request.json))
+    elif request.headers['Content-Type'] == 'application/json':
+
+        request_json = request.get_json()
+        if "value" in request_json:
+            value = request_json["value"]
+        else:
+            return "Required 'value' key not found.", 400
+
+        fmt = request_json["format"] if "format" in request_json else None
+        size = request_json["size"] if "size" in request_json else 1
+        value = convert_to_shorts_tuple(value, fmt, size) if fmt else int(value)
     else:
         return "Unsupported Media Type", 415
+
+    slave.set_values(block, address, value)
+    return "Success", 200
+
+
+def convert_to_shorts_tuple(value, fmt, size):
+    '''
+    Returns an array of short size(16 bits) values for a given register format/size
+    '''
+    if type(value) == str:
+        # pad with null character until we fill the register size
+        value = value.ljust(size * 2, '\0')
+        # encode to bytes as struct only accepts bytes for strings
+        value = value.encode()
+    packed_data = struct.pack(fmt, value)
+    shorts_tuple = struct.unpack('>' + str(size) + 'H', packed_data)
+    if len(shorts_tuple) == 1:
+        return shorts_tuple[0]
+    return shorts_tuple
+
 
 @app.errorhandler(Exception)
 def unhandled_exception(e):
@@ -231,7 +615,6 @@ def signal_handler(signm, frame):
     sim.close() 
     log.info('Stopped modbus simulator.')
     sys.exit(0)
-
 
 
 def main():

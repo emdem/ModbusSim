@@ -2,3 +2,4 @@ flask
 modbus_tk
 pyserial
 watchdog
+flasgger
