@@ -283,7 +283,7 @@ def slave(slave_id):
         return "Slave ID: " + str(slave_id) + " does not exist.", 400
 
 
-@app.route('/slave/add/<int:slave_id>')
+@app.route('/slave/add/<int:slave_id>', methods=['POST'])
 def add_slave_by_id(slave_id):
     """
         ModbusSim API / Add Slave By ID
