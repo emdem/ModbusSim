@@ -285,6 +285,44 @@ def slave(slave_id):
 
 @app.route('/slave/add/<int:slave_id>')
 def add_slave_by_id(slave_id):
+    """
+        ModbusSim API / Add Slave By ID
+        ---
+        tags:
+          - modbus-sim
+        summary: "Add slave with holding and/or input registers"
+        consumes:
+          - "application/json"
+        parameters:
+          - name: slave_id
+            in: path
+            type: integer
+            required: true
+            description: the slave ID
+          - name: "SlaveConfiguration"
+            in: body
+            required: true
+            description: The JSON configuration
+            schema:
+                id: SlaveConfiguration
+                type: object
+                required:
+                    - "input_register_count"
+                    - "holding_register_count"
+                schema:
+                    properties:
+                        input_register_count:
+                            type: integer
+                            description: "Metric Value"
+                            example: 9999
+                        holding_register_count:
+                            type: integer
+                            description: "Metric Value"
+                            example: 9999
+        responses:
+            200:
+                description: The result of the load operation
+    """
     global sim
     if request.headers['Content-Type'] == 'application/json':
         if 'input_register_count' in request.json and 'holding_register_count' in request.json: 
