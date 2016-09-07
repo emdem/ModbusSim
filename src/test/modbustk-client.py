@@ -33,7 +33,7 @@ def main():
         sunspec_id = master.execute(10, cst.READ_HOLDING_REGISTERS, 40000, 4)
         print(sunspec_id)
         print(getString(sunspec_id))
-        
+
         test = master.execute(10, cst.WRITE_SINGLE_REGISTER, 40000, output_value=21365)
         test = master.execute(10, cst.WRITE_SINGLE_REGISTER, 40001, output_value=28243)
         test = master.execute(10, cst.WRITE_SINGLE_REGISTER, 40002, output_value=0)
@@ -67,7 +67,7 @@ def number_to_bytes(number, number_decimals=0, little_endian=False, signed=False
         format_code += 'h'
     else:
         format_code += 'H'
-    
+
     try:
         bytestring = struct.pack(format_code, integer)
     except Exception as e:
