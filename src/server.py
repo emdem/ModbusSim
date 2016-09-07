@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: utf_8 -*-
 
 ##############################################
@@ -15,7 +15,7 @@ from threading import Thread
 from configparser import ConfigParser
 
 from modbussim.modbussim import ModbusSim
-from flask import Flask, request, json, jsonify, redirect
+from flask import Flask, request, jsonify, redirect
 from flasgger import Swagger
 app = Flask(__name__)
 app.config['SWAGGER'] = {
@@ -45,31 +45,38 @@ thread = None
 sim = None
 
 
-
 def init_sim():
     global thread
     global config
     global sim
 
     # in debug mode, this will get called twice. run only after reload
-    if config.getboolean('server', 'debug') and not os.environ.get('WERKZEUG_RUN_MAIN'):
+    if config.getboolean('server', 'debug') \
+            and not os.environ.get('WERKZEUG_RUN_MAIN'):
         LOGGER.info("Running in debug mode, will initialize after reload")
         return
 
     if sim is None:
         LOGGER.info("Sim was not setup so configuring sim")
-        slave_count = config.getint('slaves','slave_count')
+        slave_count = config.getint('slaves', 'slave_count')
         slave_start_id = config.getint('slaves', 'slave_start_id')
-        input_register_count = config.getint('slave-config', 'input_register_count')
-        holding_register_count = config.getint('slave-config', 'holding_register_count')
+        input_register_count = config.getint('slave-config',
+                                             'input_register_count')
+        holding_register_count = config.getint('slave-config',
+                                               'holding_register_count')
 
         if config.mode == 'rtu':
-            sim = ModbusSim(mode=config.mode, port=config.serial, baud=config.rtu_baud)
+            sim = ModbusSim(mode=config.mode,
+                            port=config.serial,
+                            baud=config.rtu_baud)
         else:
-            sim = ModbusSim(mode=config.mode, port=config.port, hostname=config.hostname)
+            sim = ModbusSim(mode=config.mode,
+                            port=config.port,
+                            hostname=config.hostname)
 
         for slave_id_offset in range(0, slave_count):
-            sim.add_slave(slave_start_id + slave_id_offset, input_register_count, holding_register_count)
+            sim.add_slave(slave_start_id + slave_id_offset,
+                          input_register_count, holding_register_count)
     if thread is None:
         thread = Thread(target=sim.start)
         thread.start()
@@ -79,9 +86,11 @@ def init_sim():
 def index():
     return "200 OK"
 
+
 @app.route('/api')
 def swagger():
     return redirect("/apidocs/index.html", code=302)
+
 
 @app.route('/slaves')
 def slaves():
@@ -325,7 +334,7 @@ def add_slave_by_id(slave_id):
     """
     global sim
     if request.headers['Content-Type'] == 'application/json':
-        if 'input_register_count' in request.json and 'holding_register_count' in request.json: 
+        if 'input_register_count' in request.json and 'holding_register_count' in request.json:
             sim.server.add_slave(slave_id, request.json['input_register_count'], request.json['holding_register_count'])
             return "Success"
         return "Must include input_register_count and holding_register_count", 415
@@ -438,7 +447,6 @@ def slave_dump(slave_id):
                             example: [ 1, 2, 3 ]
     """
     global sim
-    slave = sim.server.get_slave(slave_id)
     return sim.dump_slave(slave_id)
 
 
@@ -551,7 +559,7 @@ def slave_write(slave_id, address):
         value = None
         try:
             value = int(request.data)
-        except Exception as asdf:
+        except Exception:
             return "Could not convert to integer", 400
     elif request.headers['Content-Type'] == 'application/json':
 
@@ -650,7 +658,7 @@ def load_config(args):
 def signal_handler(signm, frame):
     global sim
     log.info('Got Signal %s, exiting now.' % (str(signm)))
-    sim.close() 
+    sim.close()
     log.info('Stopped modbus simulator.')
     sys.exit(0)
 
