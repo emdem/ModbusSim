@@ -677,4 +677,5 @@ if __name__ == '__main__':
     signal.signal(signal.SIGQUIT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     main()
-    app.run(host=config.get('server','host'),port=config.getint('server','port'),debug=config.getboolean('server','debug'))
+    app.run(host=config.get('server','host'), port=config.getint('server','port'),
+            debug=config.getboolean('server','debug'), threaded=True)
