@@ -251,6 +251,7 @@ def load_dump():
 
 
 @app.route('/slave/<int:slave_id>')
+@app.route('/modbus/slave/<int:slave_id>')
 def slave(slave_id):
     """
         ModbusSim API / Get Slave Info
@@ -495,6 +496,7 @@ def slave_read(slave_id, address):
 
 
 @app.route('/slave/<int:slave_id>/<int:address>', methods=['POST'])
+@app.route('/modbus/slave/<int:slave_id>/<int:address>', methods=['POST'])
 def slave_write(slave_id, address):
     """
         ModbusSim API / Write Register
