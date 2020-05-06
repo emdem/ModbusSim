@@ -81,6 +81,11 @@ class ModbusRtuServer(RtuServer):
 
 
 class ModbusSim(Simulator):
+    INSTANTANEOUS_REGISTERS_START_ADDRESS = 0
+    CURRENT_REGISTERS_START_ADDRESS = 16384
+    PREV1_REGISTERS_START_ADDRESS = 16896
+    HOLDING_REGISTERS_START_ADDRESS = 30001
+    INPUT_REGISTERS_START_ADDRESS = 40001
     slaves = {}
 
     def __init__(self, mode, port, baud=None, hostname=None, verbose=None):
@@ -125,10 +130,10 @@ class ModbusSim(Simulator):
                              'holding_register_count': holding_register_count}})
         if input_register_count > 0:
             slave.add_block('input_registers', 4,
-                            30001, input_register_count)
+                            self.HOLDING_REGISTERS_START_ADDRESS, input_register_count)
         if holding_register_count > 0:
             slave.add_block('holding_registers', 3,
-                            40001, holding_register_count)
+                            self.INPUT_REGISTERS_START_ADDRESS, holding_register_count)
 
     def dump_simulator(self):
         if not self.slaves:
@@ -157,10 +162,10 @@ class ModbusSim(Simulator):
         input_registers = []
         holding_registers = []
         if input_register_count > 0:
-            input_registers = slave.get_values('input_registers', 30001,
+            input_registers = slave.get_values('input_registers', self.HOLDING_REGISTERS_START_ADDRESS,
                                                input_register_count)
         if holding_register_count > 0:
-            holding_registers = slave.get_values('holding_registers', 40001,
+            holding_registers = slave.get_values('holding_registers', self.INPUT_REGISTERS_START_ADDRESS,
                                                  holding_register_count)
         toReturn = '{"slave_id":' + str(slave_id)
         toReturn += ',"input_register_count":'+str(input_register_count)
@@ -171,30 +176,29 @@ class ModbusSim(Simulator):
         return toReturn
 
     def load_slave_dump(self, dump):
+        registersDict = {}
+        self.load_register(dump, 'input_register_count', 'input_registers', 4, self.HOLDING_REGISTERS_START_ADDRESS, registersDict)
+        self.load_register(dump, 'holding_register_count', 'holding_registers', 3, self.INPUT_REGISTERS_START_ADDRESS, registersDict)
+        self.load_register(dump, 'instantaneous_register_count', 'instantaneous_registers', 3, self.INSTANTANEOUS_REGISTERS_START_ADDRESS, registersDict)
+        self.load_register(dump, 'current_data_register_count', 'current_data_registers', 3, self.CURRENT_REGISTERS_START_ADDRESS, registersDict)
+        self.load_register(dump, 'prev1_data_register_count', 'prev1_data_registers', 3, self.PREV1_REGISTERS_START_ADDRESS, registersDict)
+
+    def load_register(self, dump, register_count_label, registers_label, registerType, startAddress, registersDict):
         slave_id = dump['slave_id']
-        input_register_count = dump['input_register_count']
-        input_registers = dump['input_registers']
-        holding_register_count = dump['holding_register_count']
-        holding_registers = dump['holding_registers']
-        slave = None
-        if dump['slave_id'] in self.slaves:
+        register_count = dump[register_count_label]
+        registers = dump[registers_label]
+        if slave_id in self.slaves:
             slave = self.server.get_slave(slave_id)
-            if self.slaves[slave_id]['input_register_count'] > 0:
-                slave.remove_block('input_registers')
-            if self.slaves[slave_id]['holding_register_count'] > 0:
-                slave.remove_block('holding_registers')
+            slaveDict = self.slaves[slave_id]
+            if register_count_label in slaveDict and slaveDict[register_count_label] > 0:
+                slave.remove_block(registers_label)
         else:
             slave = self.server.add_slave(slave_id)
+        
+        if register_count > 0:
+            slave.add_block(registers_label,
+                            registerType, startAddress, register_count)
+            slave.set_values(registers_label, startAddress, registers)
 
-        if input_register_count > 0:
-            slave.add_block('input_registers',
-                            4, 30001, input_register_count)
-            slave.set_values('input_registers', 30001, input_registers)
-        if holding_register_count > 0:
-            slave.add_block('holding_registers',
-                            3, 40001, holding_register_count)
-            slave.set_values('holding_registers', 40001, holding_registers)
-
-        self.slaves.update({slave_id:
-                            {'input_register_count': input_register_count,
-                             'holding_register_count': holding_register_count}})
+        registersDict[register_count_label] = register_count
+        self.slaves.update({slave_id: registersDict})

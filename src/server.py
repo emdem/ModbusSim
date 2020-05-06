@@ -239,6 +239,30 @@ def load_dump():
                                 type: array
                                 description: "Array of Holding Register Values"
                                 example: [ 1, 2, 3 ]
+                            instantaneous_register_count:
+                                type: integer
+                                description: "Metric Value"
+                                example: 9999
+                            instantaneous_registers:
+                                type: array
+                                description: "Array of Instantaneous Register Values"
+                                example: [ 1, 2, 3 ]
+                            current_data_register_count:
+                                type: integer
+                                description: "Metric Value"
+                                example: 9999
+                            current_data_registers:
+                                type: array
+                                description: "Array of Current Register Values"
+                                example: [ 1, 2, 3 ]
+                            prev1_data_register_count:
+                                type: integer
+                                description: "Metric Value"
+                                example: 9999
+                            prev1_data_registers:
+                                type: array
+                                description: "Array of Prev1 Register Values"
+                                example: [ 1, 2, 3 ]
         responses:
             200:
                 description: The result of the load operation
@@ -484,9 +508,9 @@ def slave_read(slave_id, address):
     if slave_id not in sim.slaves:
         return "Slave does not exist", 400
     slave = sim.server.get_slave(slave_id)
-    if 30000 <= address < 30001 + config.getint('slave-config', 'input_register_count'):
+    if ModbusSim.HOLDING_REGISTERS_START_ADDRESS - 1 <= address < ModbusSim.HOLDING_REGISTERS_START_ADDRESS + config.getint('slave-config', 'input_register_count'):
         block = 'input_registers'
-    elif 40000 <= address < 40001 + config.getint('slave-config', 'holding_register_count'):
+    elif ModbusSim.INPUT_REGISTERS_START_ADDRESS - 1 <= address < ModbusSim.INPUT_REGISTERS_START_ADDRESS + config.getint('slave-config', 'holding_register_count'):
         block = 'holding_registers'
     else:
         return "Address is out of range", 400
@@ -550,9 +574,9 @@ def slave_write(slave_id, address):
         return "Slave does not exist", 400
     slave = sim.server.get_slave(slave_id)
 
-    if 30000 <= address < 30001 + config.getint('slave-config', 'input_register_count'):
+    if ModbusSim.HOLDING_REGISTERS_START_ADDRESS - 1 <= address < ModbusSim.HOLDING_REGISTERS_START_ADDRESS + config.getint('slave-config', 'input_register_count'):
         block = 'input_registers'
-    elif 40000 <= address < 40001 + config.getint('slave-config', 'holding_register_count'):
+    elif ModbusSim.INPUT_REGISTERS_START_ADDRESS - 1 <= address < ModbusSim.INPUT_REGISTERS_START_ADDRESS + config.getint('slave-config', 'holding_register_count'):
         block = 'holding_registers'
     else:
         return "Address is out of range", 400
