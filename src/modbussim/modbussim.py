@@ -82,6 +82,7 @@ class ModbusRtuServer(RtuServer):
 
 class ModbusSim(Simulator):
     INSTANTANEOUS_REGISTERS_START_ADDRESS = 0
+    TARIFF_REGISTERS_START_ADDRESS = 2048
     CURRENT_REGISTERS_START_ADDRESS = 16384
     PREV1_REGISTERS_START_ADDRESS = 16896
     HOLDING_REGISTERS_START_ADDRESS = 30001
@@ -180,6 +181,7 @@ class ModbusSim(Simulator):
         self.load_register(dump, 'input_register_count', 'input_registers', 4, self.HOLDING_REGISTERS_START_ADDRESS, registersDict)
         self.load_register(dump, 'holding_register_count', 'holding_registers', 3, self.INPUT_REGISTERS_START_ADDRESS, registersDict)
         self.load_register(dump, 'instantaneous_register_count', 'instantaneous_registers', 3, self.INSTANTANEOUS_REGISTERS_START_ADDRESS, registersDict)
+        self.load_register(dump, 'tariff_data_register_count', 'tariff_data_registers', 3, self.TARIFF_REGISTERS_START_ADDRESS, registersDict)
         self.load_register(dump, 'current_data_register_count', 'current_data_registers', 3, self.CURRENT_REGISTERS_START_ADDRESS, registersDict)
         self.load_register(dump, 'prev1_data_register_count', 'prev1_data_registers', 3, self.PREV1_REGISTERS_START_ADDRESS, registersDict)
 

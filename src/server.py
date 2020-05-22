@@ -247,6 +247,14 @@ def load_dump():
                                 type: array
                                 description: "Array of Instantaneous Register Values"
                                 example: [ 1, 2, 3 ]
+                            tariff_data_register_count:
+                                type: integer
+                                description: "Metric Value"
+                                example: 9999
+                            tariff_data_registers:
+                                type: array
+                                description: "Array of Tariff Register Values"
+                                example: [ 1, 2, 3 ]
                             current_data_register_count:
                                 type: integer
                                 description: "Metric Value"
