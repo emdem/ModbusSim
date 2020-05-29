@@ -1,5 +1,5 @@
 # ModbusSim
-Fork of Modbus RTU/TCP simulator with a REST api attached with additional read registers (instantaneous_registers, tariff_data_registers, current_data_registers, prev1_data_registers). For now, this additional registers can be imported only by using '/dump' endpoint.
+Fork of Modbus RTU/TCP simulator with a REST api attached with additional read registers (instantaneous_registers, meter_registers, tariff_data_registers, current_data_registers, prev1_data_registers). For now, this additional registers can be imported only by using '/dump' endpoint.
 
 Looked for a long time for a modbus RTU simulator that could do single server multi-slave simulations and couldn't find anything quite suitable. Something that could be used to rapidly stand-up and teardown various multi-slave setups programatically in modern distributed REST API based systems. Most tools seemed to be written for non-software developers and mostly for windows users.
 
