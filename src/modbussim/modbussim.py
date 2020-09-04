@@ -89,6 +89,7 @@ class ModbusSim(Simulator):
     HOLDING_REGISTERS_START_ADDRESS = 30001
     INPUT_REGISTERS_START_ADDRESS = 40001
     slaves = {}
+    address_dict = {}
 
     def __init__(self, mode, port, baud=None, hostname=None, verbose=None):
         self.rtu = None
@@ -99,7 +100,7 @@ class ModbusSim(Simulator):
             # timeout is too fast for 19200 so increase a little bit
             self.server._serial.timeout *= 2
             self.server._serial.interCharTimeout *= 2
-            LOGGER.info('Initializing modbus %s simulator: baud = %d port = %s parity = %s' % (self.mode, baud, port, self.rtu.parity))
+            LOGGER.info('Initializing x modbus %s simulator: baud = %d port = %s parity = %s' % (self.mode, baud, port, self.rtu.parity))
             LOGGER.info('stop bits = %d xonxoff = %d' % (self.rtu.stopbits, self.rtu.xonxoff))
         elif self.mode == 'tcp' and hostname and port:
             Simulator.__init__(self, TcpServer(address=hostname, port=port))
@@ -119,23 +120,27 @@ class ModbusSim(Simulator):
         self.rpc.close()
         self.server.stop()
 
-    def add_slave(self, slave_id, input_register_count, holding_register_count):
+    def add_slave(self, slave_id, registers_array):
         if slave_id in self.slaves:
-            raise ModbusSimError('Slave with slaveID: %s already exists...' % (slave_id, ))
-
-        LOGGER.info('Generating slave with slave_id: %d having %d input registers and %d holding registers' %
-                    (slave_id, input_register_count, holding_register_count))
-
+            raise ModbusSimError('Slave with slaveID: %s already exists...' % (slave_id))
+        LOGGER.info('Generating slave with slave_id: %s' %(slave_id))
         slave = self.server.add_slave(slave_id)
-        self.slaves.update({slave_id:
-                            {'input_register_count': input_register_count,
-                             'holding_register_count': holding_register_count}})
-        if input_register_count > 0:
-            slave.add_block('input_registers', 4,
-                            self.HOLDING_REGISTERS_START_ADDRESS, input_register_count)
-        if holding_register_count > 0:
-            slave.add_block('holding_registers', 3,
-                            self.INPUT_REGISTERS_START_ADDRESS, holding_register_count)
+        registers_dict = {}
+
+        for register_config in registers_array:
+            #TODO chech if valid block type [3,4]
+            register_name = register_config['register_name']
+            register_count = register_config['register_count']
+            start_address = register_config['start_address']
+            register_type = register_config['register_type']
+            LOGGER.info('Slave id: %s has section %s with %d registers' %(slave_id, register_name, register_count))
+            registers_dict.update({register_name + '_register_count': register_count})
+            self.address_dict.update({register_name: {'start_address': start_address, 'type': register_type}})
+            if register_count > 0:
+                slave.add_block(register_name + '_registers', register_type, start_address, register_count)
+
+        self.slaves.update({slave_id: registers_dict})
+
 
     def dump_simulator(self):
         if not self.slaves:
@@ -159,36 +164,34 @@ class ModbusSim(Simulator):
         if slave_id not in self.slaves:
             return 'Specified slave with slave_id %d does not exist.' % (slave_id,)
         slave = self.server.get_slave(slave_id)
-        input_register_count = self.slaves[slave_id]['input_register_count']
-        holding_register_count = self.slaves[slave_id]['holding_register_count']
-        input_registers = []
-        holding_registers = []
-        if input_register_count > 0:
-            input_registers = slave.get_values('input_registers', self.HOLDING_REGISTERS_START_ADDRESS,
-                                               input_register_count)
-        if holding_register_count > 0:
-            holding_registers = slave.get_values('holding_registers', self.INPUT_REGISTERS_START_ADDRESS,
-                                                 holding_register_count)
+
         toReturn = '{"slave_id":' + str(slave_id)
-        toReturn += ',"input_register_count":'+str(input_register_count)
-        toReturn += ',"input_registers":'+str(list(input_registers))
-        toReturn += ',"holding_register_count":'+str(holding_register_count)
-        toReturn += ',"holding_registers":'+str(list(holding_registers))
+
+        for register_section in self.address_dict:
+            LOGGER.info('Register section: %s' %(register_section))
+            register_count = self.slaves[slave_id][register_section + '_register_count']
+            registers = []
+
+            if register_count > 0:
+                start_address = self.address_dict[register_section]['start_address']
+                registers = slave.get_values(register_section + '_registers', start_address, register_count)
+
+            toReturn += ',"' + register_section + '_register_count":'+str(register_count)
+            toReturn += ',"' + register_section + '_registers":'+str(list(registers))
+
         toReturn += '}'
         return toReturn
 
     def load_slave_dump(self, dump):
         registersDict = {}
-        self.load_register(dump, 'input_register_count', 'input_registers', 4, self.HOLDING_REGISTERS_START_ADDRESS, registersDict)
-        self.load_register(dump, 'holding_register_count', 'holding_registers', 3, self.INPUT_REGISTERS_START_ADDRESS, registersDict)
-        self.load_register(dump, 'instantaneous_register_count', 'instantaneous_registers', 3, self.INSTANTANEOUS_REGISTERS_START_ADDRESS, registersDict)
-        self.load_register(dump, 'meter_register_count', 'meter_registers', 3, self.METER_REGISTERS_START_ADDRESS, registersDict)
-        self.load_register(dump, 'tariff_data_register_count', 'tariff_data_registers', 3, self.TARIFF_REGISTERS_START_ADDRESS, registersDict)
-        self.load_register(dump, 'current_data_register_count', 'current_data_registers', 3, self.CURRENT_REGISTERS_START_ADDRESS, registersDict)
-        self.load_register(dump, 'prev1_data_register_count', 'prev1_data_registers', 3, self.PREV1_REGISTERS_START_ADDRESS, registersDict)
-
-    def load_register(self, dump, register_count_label, registers_label, registerType, startAddress, registersDict):
         slave_id = dump['slave_id']
+        for register_section in self.address_dict:
+            start_address = self.address_dict[register_section]['start_address']
+            register_type = self.address_dict[register_section]['type']
+            self.load_register(dump, slave_id, register_section + '_register_count', register_section + '_registers', register_type, start_address, registersDict)
+        self.slaves.update({slave_id: registersDict})
+
+    def load_register(self, dump, slave_id, register_count_label, registers_label, registerType, startAddress, registersDict):
         register_count = dump[register_count_label]
         registers = dump[registers_label]
         if slave_id in self.slaves:
@@ -205,4 +208,3 @@ class ModbusSim(Simulator):
             slave.set_values(registers_label, startAddress, registers)
 
         registersDict[register_count_label] = register_count
-        self.slaves.update({slave_id: registersDict})

@@ -75,6 +75,7 @@ def init_sim():
                             hostname=config.hostname)
 
         for slave_id_offset in range(0, slave_count):
+            #TODO adjust it as dictionary
             sim.add_slave(slave_start_id + slave_id_offset,
                           input_register_count, holding_register_count)
     if thread is None:
@@ -354,18 +355,18 @@ def add_slave_by_id(slave_id):
             required: true
             description: The JSON configuration
             schema:
-                id: SlaveConfiguration
-                type: object
-                required:
-                    - "input_register_count"
-                    - "holding_register_count"
-                schema:
+                type: array
+                items:
+                    id: RegisterConfiguration
+                    type: object
                     properties:
-                        input_register_count:
+                        register_name:
+                            type: string
+                        register_type:
                             type: integer
-                            description: "Metric Value"
-                            example: 9999
-                        holding_register_count:
+                        start_address:
+                            type: integer
+                        register_count:
                             type: integer
                             description: "Metric Value"
                             example: 9999
@@ -375,10 +376,10 @@ def add_slave_by_id(slave_id):
     """
     global sim
     if request.headers['Content-Type'] == 'application/json':
-        if 'input_register_count' in request.json and 'holding_register_count' in request.json:
-            sim.server.add_slave(slave_id, request.json['input_register_count'], request.json['holding_register_count'])
+        if request.json:
+            sim.add_slave(slave_id, request.json)
             return "Success"
-        return "Must include input_register_count and holding_register_count", 415
+        return "Must include register configurations", 415
     return "Unsupported Media Type", 415
 
 
