@@ -22,7 +22,7 @@ app.config['SWAGGER'] = {
     "swagger_version": "2.0",
     "specs": [
         {
-            "version": "1.0.0",
+            "version": "2.0.0",
             "title": "ModbusSim API",
             "description": "An API for interacting with ModbusSim",
             "endpoint": 'spec',
@@ -58,12 +58,10 @@ def init_sim():
 
     if sim is None:
         LOGGER.info("Sim was not setup so configuring sim")
-        slave_count = config.getint('slaves', 'slave_count')
-        slave_start_id = config.getint('slaves', 'slave_start_id')
-        input_register_count = config.getint('slave-config',
-                                             'input_register_count')
-        holding_register_count = config.getint('slave-config',
-                                               'holding_register_count')
+        #slave_count = config.getint('slaves', 'slave_count')
+        #slave_start_id = config.getint('slaves', 'slave_start_id')
+        #input_register_count = config.getint('slave-config', 'input_register_count')
+        #holding_register_count = config.getint('slave-config','holding_register_count')
 
         if config.mode == 'rtu':
             sim = ModbusSim(mode=config.mode,
@@ -74,10 +72,11 @@ def init_sim():
                             port=config.port,
                             hostname=config.hostname)
 
-        for slave_id_offset in range(0, slave_count):
+        # TODO add register sections
+        # TODO add all slaves acording to register sections
+        #for slave_id_offset in range(0, slave_count):
             #TODO adjust it as dictionary
-            sim.add_slave(slave_start_id + slave_id_offset,
-                          input_register_count, holding_register_count)
+            #sim.add_slave(slave_start_id + slave_id_offset, input_register_count, holding_register_count)
     if thread is None:
         thread = Thread(target=sim.start)
         thread.start()
@@ -119,31 +118,6 @@ def slaves():
                             schema:
                                 id: SlaveConfiguration
                                 type: object
-                                properties:
-                                    holding_register_count:
-                                        type: integer
-                                        description: "Metric Value"
-                                        example: 9999
-                                    input_register_count:
-                                        type: integer
-                                        description: "Metric Value"
-                                        example: 9999
-                        "2":
-                            type: object
-                            description: "Slave Configuration"
-                            schema:
-                                id: SlaveConfiguration
-                                type: object
-                                properties:
-                                    holding_register_count:
-                                        type: integer
-                                        description: "Metric Value"
-                                        example: 9999
-                                    input_register_count:
-                                        type: integer
-                                        description: "Metric Value"
-                                        example: 9999
-
     """
     global sim
     return jsonify(sim.slaves)
@@ -175,22 +149,32 @@ def dump():
                             slave_id:
                                 type: integer
                                 example: 1
-                            input_register_count:
-                                type: integer
-                                description: "Metric Value"
-                                example: 9999
-                            input_registers:
+                            registers:
                                 type: array
-                                description: "Array of Input Register Values"
-                                example: [ 0, 0, 0 ]
-                            holding_register_count:
-                                type: integer
-                                description: "Metric Value"
-                                example: 9999
-                            holding_registers:
-                                type: array
-                                description: "Array of Holding Register Values"
-                                example: [ 0, 0, 0 ]
+                                items:
+                                    id: RegisterSection
+                                    type: object
+                                    properties:
+                                        name:
+                                            type: string
+                                            description: "The register section name"
+                                            example: input
+                                        register_count:
+                                            type: integer
+                                            description: "Metric Value"
+                                            example: 9999
+                                        register_type:
+                                            type: integer
+                                            description: "Type of registers"
+                                            example: 3
+                                        start_address:
+                                            type: integer
+                                            description: "Start address of register section"
+                                            example: 0
+                                        register_data:
+                                            type: array
+                                            description: "Array of Input Register Values"
+                                            example: [ 0, 0, 0 ]
     """
     global sim
     return sim.dump_simulator()
@@ -224,62 +208,32 @@ def load_dump():
                             slave_id:
                                 type: integer
                                 example: 1
-                            input_register_count:
-                                type: integer
-                                description: "Metric Value"
-                                example: 9999
-                            input_registers:
+                            registers:
                                 type: array
-                                description: "Array of Input Register Values"
-                                example: [ 1, 2, 3 ]
-                            holding_register_count:
-                                type: integer
-                                description: "Metric Value"
-                                example: 9999
-                            holding_registers:
-                                type: array
-                                description: "Array of Holding Register Values"
-                                example: [ 1, 2, 3 ]
-                            instantaneous_register_count:
-                                type: integer
-                                description: "Metric Value"
-                                example: 9999
-                            instantaneous_registers:
-                                type: array
-                                description: "Array of Instantaneous Register Values"
-                                example: [ 1, 2, 3 ]
-                            meter_register_count:
-                                type: integer
-                                description: "Metric Value"
-                                example: 9999
-                            meter_registers:
-                                type: array
-                                description: "Array of Meter Register Values"
-                                example: [ 1, 2, 3 ]
-                            tariff_data_register_count:
-                                type: integer
-                                description: "Metric Value"
-                                example: 9999
-                            tariff_data_registers:
-                                type: array
-                                description: "Array of Tariff Register Values"
-                                example: [ 1, 2, 3 ]
-                            current_data_register_count:
-                                type: integer
-                                description: "Metric Value"
-                                example: 9999
-                            current_data_registers:
-                                type: array
-                                description: "Array of Current Register Values"
-                                example: [ 1, 2, 3 ]
-                            prev1_data_register_count:
-                                type: integer
-                                description: "Metric Value"
-                                example: 9999
-                            prev1_data_registers:
-                                type: array
-                                description: "Array of Prev1 Register Values"
-                                example: [ 1, 2, 3 ]
+                                items:
+                                    id: RegisterSection
+                                    type: object
+                                    properties:
+                                        name:
+                                            type: string
+                                            description: "The register section name"
+                                            example: input
+                                        register_count:
+                                            type: integer
+                                            description: "Metric Value"
+                                            example: 9999
+                                        register_type:
+                                            type: integer
+                                            description: "Type of registers"
+                                            example: 3
+                                        start_address:
+                                            type: integer
+                                            description: "Start address of register section"
+                                            example: 0
+                                        register_data:
+                                            type: array
+                                            description: "Array of Input Register Values"
+                                            example: [ 0, 0, 0 ]
         responses:
             200:
                 description: The result of the load operation
@@ -314,18 +268,6 @@ def slave(slave_id):
             schema:
                 type: object
                 description: "Slave Configuration"
-                schema:
-                    id: SlaveConfiguration
-                    type: object
-                    properties:
-                        holding_register_count:
-                            type: integer
-                            description: "Metric Value"
-                            example: 9999
-                        input_register_count:
-                            type: integer
-                            description: "Metric Value"
-                            example: 9999
     """
     global sim
     if slave_id in sim.slaves:
@@ -357,19 +299,25 @@ def add_slave_by_id(slave_id):
             schema:
                 type: array
                 items:
-                    id: RegisterConfiguration
+                    id: RegisterSection
                     type: object
                     properties:
-                        register_name:
+                        register_section_name:
                             type: string
-                        register_type:
-                            type: integer
-                        start_address:
-                            type: integer
+                            description: "The register section name"
+                            example: input
                         register_count:
                             type: integer
                             description: "Metric Value"
                             example: 9999
+                        register_type:
+                            type: integer
+                            description: "Type of registers"
+                            example: 3
+                        start_address:
+                            type: integer
+                            description: "Start address of register section"
+                            example: 0
         responses:
             200:
                 description: The result of the load operation
@@ -413,22 +361,32 @@ def load_slave_dump(slave_id):
                         slave_id:
                             type: integer
                             example: 1
-                        input_register_count:
-                            type: integer
-                            description: "Metric Value"
-                            example: 9999
-                        input_registers:
+                        registers:
                             type: array
-                            description: "Array of Input Register Values"
-                            example: [ 1, 2, 3 ]
-                        holding_register_count:
-                            type: integer
-                            description: "Metric Value"
-                            example: 9999
-                        holding_registers:
-                            type: array
-                            description: "Array of Holding Register Values"
-                            example: [ 1, 2, 3 ]
+                            items:
+                                id: RegisterSection
+                                type: object
+                                properties:
+                                    name:
+                                        type: string
+                                        description: "The register section name"
+                                        example: input
+                                    register_count:
+                                        type: integer
+                                        description: "Metric Value"
+                                        example: 9999
+                                    register_type:
+                                        type: integer
+                                        description: "Type of registers"
+                                        example: 3
+                                    start_address:
+                                        type: integer
+                                        description: "Start address of register section"
+                                        example: 0
+                                    register_data:
+                                        type: array
+                                        description: "Array of Input Register Values"
+                                        example: [ 0, 0, 0 ]
         responses:
             200:
                 description: The result of the load operation
@@ -466,34 +424,13 @@ def slave_dump(slave_id):
                     - "slave_id"
                 required:
                     - "slave_id"
-                schema:
-                    properties:
-                        slave_id:
-                            type: integer
-                            example: 1
-                        input_register_count:
-                            type: integer
-                            description: "Metric Value"
-                            example: 9999
-                        input_registers:
-                            type: array
-                            description: "Array of Input Register Values"
-                            example: [ 1, 2, 3 ]
-                        holding_register_count:
-                            type: integer
-                            description: "Metric Value"
-                            example: 9999
-                        holding_registers:
-                            type: array
-                            description: "Array of Holding Register Values"
-                            example: [ 1, 2, 3 ]
     """
     global sim
     return sim.dump_slave(slave_id)
 
 
-@app.route('/slave/<int:slave_id>/<int:address>')
-def slave_read(slave_id, address):
+@app.route('/slave/<int:slave_id>/<string:block>/<int:address>')
+def slave_read(slave_id, block, address):
     """
         ModbusSim API / Read Register
         ---
@@ -508,6 +445,11 @@ def slave_read(slave_id, address):
             type: integer
             required: true
             description: the slave ID
+          - name: block
+            in: path
+            type: string
+            required: true
+            description: the register section name
           - name: address
             in: path
             type: integer
@@ -524,21 +466,13 @@ def slave_read(slave_id, address):
     global sim
     if slave_id not in sim.slaves:
         return "Slave does not exist", 400
-    slave = sim.server.get_slave(slave_id)
-    if ModbusSim.HOLDING_REGISTERS_START_ADDRESS - 1 <= address < ModbusSim.HOLDING_REGISTERS_START_ADDRESS + config.getint('slave-config', 'input_register_count'):
-        block = 'input_registers'
-    elif ModbusSim.INPUT_REGISTERS_START_ADDRESS - 1 <= address < ModbusSim.INPUT_REGISTERS_START_ADDRESS + config.getint('slave-config', 'holding_register_count'):
-        block = 'holding_registers'
-    else:
-        return "Address is out of range", 400
     value = slave.get_values(block, address, 1)
-
     return str(value[0])
 
 
 @app.route('/slave/<int:slave_id>/<int:address>', methods=['POST'])
-@app.route('/modbus/slave/<int:slave_id>/<int:address>', methods=['POST'])
-def slave_write(slave_id, address):
+@app.route('/modbus/slave/<int:slave_id>/<string:block>/<int:address>', methods=['POST'])
+def slave_write(slave_id, block, address):
     """
         ModbusSim API / Write Register
         ---
@@ -554,6 +488,11 @@ def slave_write(slave_id, address):
             type: integer
             required: true
             description: the slave ID
+          - name: block
+            in: path
+            type: string
+            required: true
+            description: the register section name
           - name: address
             in: path
             type: integer
@@ -590,13 +529,6 @@ def slave_write(slave_id, address):
     if slave_id not in sim.slaves:
         return "Slave does not exist", 400
     slave = sim.server.get_slave(slave_id)
-
-    if ModbusSim.HOLDING_REGISTERS_START_ADDRESS - 1 <= address < ModbusSim.HOLDING_REGISTERS_START_ADDRESS + config.getint('slave-config', 'input_register_count'):
-        block = 'input_registers'
-    elif ModbusSim.INPUT_REGISTERS_START_ADDRESS - 1 <= address < ModbusSim.INPUT_REGISTERS_START_ADDRESS + config.getint('slave-config', 'holding_register_count'):
-        block = 'holding_registers'
-    else:
-        return "Address is out of range", 400
 
     if request.headers['Content-Type'] == 'text/plain':
         value = None
@@ -646,7 +578,6 @@ def unhandled_exception(e):
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', '--slave_id', type=str, default=1, help='slave id for the modbus device')
     parser.add_argument('-m', '--mode', type=str, choices=('rtu', 'tcp'), default='rtu', help='modbus mode')
     parser.add_argument('-P', '--port', type=int, default=5005, help='IP port if using TCP mode')
     parser.add_argument('-p', '--rtu_parity', type=str, choices=('even','odd','none'), default='none', help='modbus over serial parity')
@@ -664,8 +595,6 @@ def parse_args():
 def load_config(args):
     config = ConfigParser(allow_no_value=True)
     config.read(args.config)
-    if args.slave_id:
-        config.slave_id = args.slave_id
     if args.mode:
         config.mode = args.mode
     if args.port:
@@ -679,15 +608,15 @@ def load_config(args):
     if args.serial:
         config.serial = args.serial
 
-    if not 'slaves' in config.sections():
-        config.add_section('slaves')
-        config.set('slaves', 'slave_count', str(args.slave_count))
-        config.set('slaves', 'slave_start_id', str(args.slave_start_id))
+    #if not 'slaves' in config.sections():
+    #    config.add_section('slaves')
+    #    config.set('slaves', 'slave_count', str(args.slave_count))
+    #    config.set('slaves', 'slave_start_id', str(args.slave_start_id))
 
-    if not 'slave-config' in config.sections():
-        config.add_section('slave-config')
-        config.set('slave-config', 'input_register_count', '9999')
-        config.set('slave-config', 'holding_register_count', '9999')
+    #if not 'slave-config' in config.sections():
+    #    config.add_section('slave-config')
+    #    config.set('slave-config', 'input_register_count', '9999')
+    #    config.set('slave-config', 'holding_register_count', '9999')
 
     if not 'server' in config.sections():
         config.add_section('server')
@@ -700,9 +629,9 @@ def load_config(args):
 
 def signal_handler(signm, frame):
     global sim
-    log.info('Got Signal %s, exiting now.' % (str(signm)))
+    LOGGER.info('Got Signal %s, exiting now.' % (str(signm)))
     sim.close()
-    log.info('Stopped modbus simulator.')
+    LOGGER.info('Stopped modbus simulator.')
     sys.exit(0)
 
 

@@ -81,15 +81,8 @@ class ModbusRtuServer(RtuServer):
 
 
 class ModbusSim(Simulator):
-    INSTANTANEOUS_REGISTERS_START_ADDRESS = 0
-    METER_REGISTERS_START_ADDRESS = 1026
-    TARIFF_REGISTERS_START_ADDRESS = 2048
-    CURRENT_REGISTERS_START_ADDRESS = 16384
-    PREV1_REGISTERS_START_ADDRESS = 16896
-    HOLDING_REGISTERS_START_ADDRESS = 30001
-    INPUT_REGISTERS_START_ADDRESS = 40001
+
     slaves = {}
-    address_dict = {}
 
     def __init__(self, mode, port, baud=None, hostname=None, verbose=None):
         self.rtu = None
@@ -128,14 +121,16 @@ class ModbusSim(Simulator):
         registers_dict = {}
 
         for register_config in registers_array:
-            #TODO chech if valid block type [3,4]
-            register_name = register_config['register_name']
+            register_name = register_config['register_section_name']
             register_count = register_config['register_count']
             start_address = register_config['start_address']
             register_type = register_config['register_type']
             LOGGER.info('Slave id: %s has section %s with %d registers' %(slave_id, register_name, register_count))
-            registers_dict.update({register_name + '_register_count': register_count})
-            self.address_dict.update({register_name: {'start_address': start_address, 'type': register_type}})
+            registers_dict.update({register_name : {
+                register_name + '_register_count': register_count,
+                register_name + '_start_address': start_address,
+                register_name + '_register_type': register_type
+            }})
             if register_count > 0:
                 slave.add_block(register_name + '_registers', register_type, start_address, register_count)
 
@@ -166,45 +161,60 @@ class ModbusSim(Simulator):
         slave = self.server.get_slave(slave_id)
 
         toReturn = '{"slave_id":' + str(slave_id)
-
-        for register_section in self.address_dict:
-            LOGGER.info('Register section: %s' %(register_section))
-            register_count = self.slaves[slave_id][register_section + '_register_count']
+        toReturn += ',"registers":['
+        for register_name in self.slaves[slave_id]:
+            LOGGER.info('Register: %s' %(register_name))
+            register_section = self.slaves[slave_id][register_name]
+            register_count = register_section[register_name + '_register_count']
+            start_address = register_section[register_name + '_start_address']
+            register_type = register_section[register_name + '_register_type']
             registers = []
 
             if register_count > 0:
-                start_address = self.address_dict[register_section]['start_address']
-                registers = slave.get_values(register_section + '_registers', start_address, register_count)
+                registers = slave.get_values(register_name + '_registers', start_address, register_count)
 
-            toReturn += ',"' + register_section + '_register_count":'+str(register_count)
-            toReturn += ',"' + register_section + '_registers":'+str(list(registers))
+            if not toReturn.endswith('['):
+                toReturn += ','
+            toReturn += '{"name": "' + register_name + '"'
+            toReturn += ',"register_count": '+str(register_count)
+            toReturn += ',"register_type": '+str(register_type)
+            toReturn += ',"start_address": '+str(start_address)
+            toReturn += ',"register_data": '+str(list(registers))
+            toReturn += '}'
 
-        toReturn += '}'
+        toReturn += ']}'
         return toReturn
 
     def load_slave_dump(self, dump):
         registersDict = {}
         slave_id = dump['slave_id']
-        for register_section in self.address_dict:
-            start_address = self.address_dict[register_section]['start_address']
-            register_type = self.address_dict[register_section]['type']
-            self.load_register(dump, slave_id, register_section + '_register_count', register_section + '_registers', register_type, start_address, registersDict)
+        registers = dump['registers']
+        for register in registers:
+            self.load_register(slave_id, register, registersDict)
         self.slaves.update({slave_id: registersDict})
 
-    def load_register(self, dump, slave_id, register_count_label, registers_label, registerType, startAddress, registersDict):
-        register_count = dump[register_count_label]
-        registers = dump[registers_label]
+    def load_register(self, slave_id, register, registers_dict):
+        print(register)
+        register_name = register['name']
+        register_count = register['register_count']
+        register_type = register['register_type']
+        start_address = register['start_address']
+        register_data = register['register_data']
         if slave_id in self.slaves:
             slave = self.server.get_slave(slave_id)
             slaveDict = self.slaves[slave_id]
-            if register_count_label in slaveDict and slaveDict[register_count_label] > 0:
-                slave.remove_block(registers_label)
+            if register_name in slaveDict and slaveDict[register_name + '_register_count'] > 0:
+                slave.remove_block(register_name)
         else:
             slave = self.server.add_slave(slave_id)
         
         if register_count > 0:
-            slave.add_block(registers_label,
-                            registerType, startAddress, register_count)
-            slave.set_values(registers_label, startAddress, registers)
+            slave.add_block(register_name + '_registers',
+                            register_type, start_address, register_count)
+            slave.set_values(register_name + '_registers', start_address, register_data)
 
-        registersDict[register_count_label] = register_count
+        registers_dict.update({register_name : {
+                register_name + '_register_count': register_count,
+                register_name + '_start_address': start_address,
+                register_name + '_register_type': register_type
+            }})
